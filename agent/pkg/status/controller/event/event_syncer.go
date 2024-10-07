@@ -31,7 +31,8 @@ var eventPredicateFunc = predicate.NewPredicateFuncs(func(obj client.Object) boo
 	}
 	// only sync the policy event || extend other InvolvedObject kind
 	return event.InvolvedObject.Kind == policiesv1.Kind ||
-		event.InvolvedObject.Kind == constants.ManagedClusterKind
+		event.InvolvedObject.Kind == constants.ManagedClusterKind ||
+		event.InvolvedObject.Kind == constants.ClusterGroupUpgradeKind
 })
 
 func LaunchEventSyncer(ctx context.Context, mgr ctrl.Manager,
@@ -53,5 +54,6 @@ func LaunchEventSyncer(ctx context.Context, mgr ctrl.Manager,
 			NewLocalRootPolicyEmitter(ctx, mgr.GetClient(), eventTopic),
 			// NewLocalReplicatedPolicyEmitter(ctx, mgr.GetClient(), eventTopic),
 			NewManagedClusterEventEmitter(ctx, mgr.GetClient(), eventTopic),
+			NewClusterGroupUpgradeEventEmitter(ctx, mgr.GetClient(), eventTopic),
 		})
 }

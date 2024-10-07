@@ -1,0 +1,17 @@
+apiVersion: ran.openshift.io/v1alpha1
+kind: ClusterGroupUpgrade
+metadata:
+  name: cgu-create-test-namespace
+  namespace: test-policies
+spec:
+  clusters:
+    - greyerof-4-16-3
+  managedPolicies:
+    - create-test-ns
+  remediationStrategy:
+    canaries: []
+    maxConcurrency: 1
+    timeout: 5m
+  preCaching:
+    enabled: false
+  enable: false

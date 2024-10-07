@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kafka-consumer
+  namespace: tests
+spec:
+  volumes:
+    - name: certs
+      secret:
+        secretName: my-consumer-1
+  containers:
+  - name: app
+    command:
+    - bash
+    - -c
+    - sleep inf
+    image: quay.io/greyerof/tests:kafkac1
+    volumeMounts:
+      - name: certs
+        readOnly: true
+        mountPath: "/kafka-certs"

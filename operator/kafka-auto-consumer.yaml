@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kafka-consumer
+  namespace: tests
+spec:
+  volumes:
+    - name: certs
+      secret:
+        secretName: kafka-consumer-auth
+  containers:
+  - name: app
+    imagePullPolicy: Always
+    command:
+    - /app
+    - --bootstrap-servers=kafka-kafka-tls-bootstrap-multicluster-global-hub.apps.greyerof-mcgh-4-16-3.cnfcertlab.org
+    - --port=443
+    - --ssl-key-file=/kafka-certs/client.key
+    - --ca-crt-file=/kafka-certs/ca.crt
+    - --client-crt-file=/kafka-certs/client.crt
+    - --topic=gh-status.greyerof-gh-4-16-3
+    image: quay.io/greyerof/tests:kafkac1
+    volumeMounts:
+      - name: certs
+        readOnly: true
+        mountPath: "/kafka-certs"
+    resources:
+      requests:
+        cpu: 250m
+        memory: 256M
+      limits:
+        cpu: 500m
+        memory: 512M

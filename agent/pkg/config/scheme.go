@@ -4,6 +4,7 @@
 package config
 
 import (
+	cguv1alpha1 "github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades/v1alpha1"
 	configv1 "github.com/openshift/api/config/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	clusterinfov1beta1 "github.com/stolostron/cluster-lifecycle-api/clusterinfo/v1beta1"
@@ -50,5 +51,6 @@ func GetRuntimeScheme() *runtime.Scheme {
 	utilruntime.Must(appv1beta1.AddToScheme(scheme))
 	utilruntime.Must(clusterinfov1beta1.AddToScheme(scheme))
 	utilruntime.Must(klusterletv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(cguv1alpha1.AddToScheme(scheme))
 	return scheme
 }
