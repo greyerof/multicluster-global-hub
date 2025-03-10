@@ -258,4 +258,12 @@ rules:
   - create
   - watch
   - list
+- apiGroups:
+  - ran.openshift.io
+  resources:
+  - clustergroupupgrades
+  verbs:
+  - get
+  - list
+  - watch
 {{- end -}}
