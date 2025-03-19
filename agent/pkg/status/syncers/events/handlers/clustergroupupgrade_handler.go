@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"context"
-	"errors"
+	"encoding/json"
 	"strings"
 
 	cguv1alpha1 "github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades/v1alpha1"
@@ -18,7 +18,6 @@ import (
 	"github.com/stolostron/multicluster-global-hub/pkg/constants"
 	"github.com/stolostron/multicluster-global-hub/pkg/database/models"
 	"github.com/stolostron/multicluster-global-hub/pkg/enum"
-	"github.com/stolostron/multicluster-global-hub/pkg/utils"
 )
 
 func NewClusterGroupUpgradeEventEmitter() interfaces.Emitter {
@@ -60,7 +59,7 @@ func NewClusterGroupUpgradeEventHandler(ctx context.Context, c client.Client) *c
 	}
 }
 
-func (h *clusterGroupUpgradeEventHandler) ShouldUpdate(obj client.Object) bool {
+func (h *clusterGroupUpgradeEventHandler) shouldUpdate(obj client.Object) bool {
 	evt, ok := obj.(*corev1.Event)
 	if !ok {
 		return false
@@ -78,20 +77,11 @@ func (h *clusterGroupUpgradeEventHandler) ShouldUpdate(obj client.Object) bool {
 	return true
 }
 
-func (h *clusterGroupUpgradeEventHandler) getClusterIDs(cgu *cguv1alpha1.ClusterGroupUpgrade) ([]string, error) {
-	ids := make([]string, len(cgu.Status.Clusters))
-	for i, cluster := range cgu.Status.Clusters {
-		clusterId, err := utils.GetClusterId(h.ctx, h.runtimeClient, cluster.Name)
-		if err != nil {
-			return nil, errors.New("failed to get clusterId for cluster " + cluster.Name)
-		}
-		ids[i] = clusterId
+func (h *clusterGroupUpgradeEventHandler) Update(obj client.Object) bool {
+	if !h.shouldUpdate(obj) {
+		return false
 	}
 
-	return ids, nil
-}
-
-func (h *clusterGroupUpgradeEventHandler) Update(obj client.Object) bool {
 	evt, ok := obj.(*corev1.Event)
 	if !ok {
 		return false
@@ -99,23 +89,25 @@ func (h *clusterGroupUpgradeEventHandler) Update(obj client.Object) bool {
 
 	cgu, err := getInvolvedCGU(h.ctx, h.runtimeClient, evt)
 	if err != nil {
-		log.Error(err, "failed to get involved ClusterGroupUpgrade", "event", evt.Namespace+"/"+evt.Name, "cluster", cgu.Name)
+		log.Error("failed to get involved ClusterGroupUpgrade=%s from event=%s: %s",
+			cgu.Namespace+"/"+cgu.Name,
+			evt.Namespace+"/"+evt.Name, "cluster",
+			err.Error())
 		return false
 	}
 
-	clusterIds, err := h.getClusterIDs(cgu)
+	annsJSONB, err := json.Marshal(evt.Annotations)
 	if err != nil {
-		log.Error(err, "failed to get clusterIds", "event", evt.Namespace+"/"+evt.Name)
-		return false
+		log.Error("failed to parse the event annotations %+v: %s", evt.Annotations, err.Error())
 	}
 
 	clusterEvent := models.ClusterGroupUpgradeEvent{
 		EventName:           evt.Name,
 		EventNamespace:      evt.Namespace,
+		EventAnns:           annsJSONB,
 		Message:             evt.Message,
 		Reason:              evt.Reason,
 		CGUName:             cgu.Name,
-		ClusterIDs:          clusterIds,
 		LeafHubName:         configs.GetLeafHubName(),
 		ReportingController: evt.ReportingController,
 		ReportingInstance:   evt.ReportingInstance,
